@@ -15,14 +15,11 @@ public class Manager : MonoBehaviour
     [SerializeField]
     private Transform sectionButton;
 
-    private string testPath = "D:\\_build";
 
     private void Start()
     {
         SetResolution();
         CreateButtons();
-        var appdata = new AppData("Môn Hóa Học", "D:\\_build");
-        JsonDataHelper.WriteData<AppData>(appdata, "appdata");
     }
     private void SetResolution()
     {
@@ -33,16 +30,26 @@ public class Manager : MonoBehaviour
 
     private void CreateButtons()
     {
-        var items = JsonDataHelper.ReadDatas<ItemData>("data");
+        var appData = JsonDataHelper.ReadData<AppData>("app_data");
+        if (appData == null )
+        {
+            ShowError("Dữ liệu data của app bị lỗi hoặc không tìm thấy!");
+            return;
+        }
+        var items = JsonDataHelper.ReadDatas<ItemData>("item_data");
         if (items == null)
         {
-            ShowError("Dữ liệu data bị lỗi hoặc không tìm thấy!");
+            ShowError("Dữ liệu data của exe bị lỗi hoặc không tìm thấy!");
+            return;
         }
 
         var appPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
-        var startPath = System.IO.Path.Combine(appPath, "..");
+        var findPath = System.IO.Path.Combine(appPath, "..");
 
-        var exes = FindExeFiles(testPath);
+        var startPath = string.IsNullOrEmpty(appData.testPath) ?
+                     findPath : 
+                     appData.testPath;
+        var exes = FindExeFiles(startPath);
 
         foreach (var item in items)
         {
