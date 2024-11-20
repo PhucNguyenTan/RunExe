@@ -1,28 +1,44 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class Manager : MonoBehaviour
 {
     [SerializeField]
     private Item itemPrefab;
+    [SerializeField]
+    private TMP_Text tmpTextError;
+    [SerializeField]
+    private Transform sectionError;
+    [SerializeField]
+    private Transform sectionButton;
 
     private string testPath = "D:\\_build";
 
-    private List<ItemData> items = new List<ItemData>
-    {
-        new ItemData(1, "appicn_phantuhuuco", "organic-molecules.exe" , "Hữu cơ"),
-        new ItemData(2, "appicn_rutherford_bohr", "excretory-system.exe" ,"Rutherford"),
-        new ItemData(3, "appicn_donchathopchat", "simple_compound.exe" ,"Đơn chất"),
-        new ItemData(4, "appicn_binhdienphan", "ProjectOptics.exe" ,"Điện phan6"),
-        new ItemData(5, "appicn_tinhbot", "ProjectOptics_2.exe" ,"Tinh bột"),
-    };
-
     private void Start()
     {
+        SetResolution();
+        CreateButtons();
+        var appdata = new AppData("Môn Hóa Học", "D:\\_build");
+        JsonDataHelper.WriteData<AppData>(appdata, "appdata");
+    }
+    private void SetResolution()
+    {
+        sectionError.gameObject.SetActive(false);
+        sectionButton.gameObject.SetActive(true);
         Screen.SetResolution(1280, 720, false);
+    }
+
+    private void CreateButtons()
+    {
+        var items = JsonDataHelper.ReadDatas<ItemData>("data");
+        if (items == null)
+        {
+            ShowError("Dữ liệu data bị lỗi hoặc không tìm thấy!");
+        }
+
         var appPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
         var startPath = System.IO.Path.Combine(appPath, "..");
 
@@ -32,14 +48,17 @@ public class Manager : MonoBehaviour
         {
             if (exes.TryGetValue(item.exeName, out var path))
             {
-                var button = Instantiate(itemPrefab, transform);
-                var sprite = Resources.Load<Sprite>(item.imageName);
+                var button = Instantiate(itemPrefab, sectionButton);
+                var sprite = Resources.Load<Sprite>($"Images/{item.imageName}");
                 button.Setup(item.text, () => RunExe(path), sprite);
+                if(sprite == null)
+                    ShowError($"Không tìm thấy file hình: {item.imageName}");
             }
             else
             {
-                var button = Instantiate(itemPrefab, transform);
-                button.Setup($"Không tìm thấy file {item.exeName}", null, null);
+                var button = Instantiate(itemPrefab, sectionButton);
+                button.Setup(item.text, null, null);
+                ShowError($"Không tìm thấy file: {item.exeName}");
             }
         }
     }
@@ -52,23 +71,23 @@ public class Manager : MonoBehaviour
         {
             try
             {
-                string[] files = Directory.GetFiles(directoryPath, "*.exe", SearchOption.AllDirectories);
-                foreach (string file in files)
+                var files = Directory.GetFiles(directoryPath, "*.exe", SearchOption.AllDirectories);
+                foreach (var file in files)
                 {
-                    string fileName = Path.GetFileName(file);
-                    string filePath = Path.GetFullPath(file);
+                    var fileName = Path.GetFileName(file);
+                    var filePath = Path.GetFullPath(file);
                     if(!exeFiles.ContainsKey(fileName))
                         exeFiles.Add(fileName, filePath);
                 }
             }
             catch (System.Exception ex)
             {
-                UnityEngine.Debug.LogError($"Error finding exe files: {ex.Message}");
+                ShowError($"Lỗi Exception khi tìm file: {ex.Message}");
             }
         }
         else
         {
-            UnityEngine.Debug.LogError($"Directory not found: {directoryPath}");
+            ShowError($"Không tìm thấy địa chỉ folder: {directoryPath}");
         }
 
         return exeFiles;
@@ -86,5 +105,12 @@ public class Manager : MonoBehaviour
     private void Quit()
     {
         Application.Quit();
+    }
+
+    private void ShowError(string error)
+    {
+        tmpTextError.text += $"\\r\\n {error}";
+        var isShowText = !string.IsNullOrEmpty(tmpTextError.text);
+        sectionError.gameObject.SetActive(isShowText);
     }
 }
