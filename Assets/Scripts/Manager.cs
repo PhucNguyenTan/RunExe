@@ -1,49 +1,52 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class Manager : MonoBehaviour
 {
     [SerializeField]
-    private TMP_Text tmpCount;
-
-    [SerializeField]
-    private Button closeButton;
-    [SerializeField] 
-    private TMP_Text tmpPath;
-    [SerializeField]
     private Item itemPrefab;
-    [SerializeField]
-    private ScrollRect scrollView;
 
-    private string startPath = "D:\\Unity Project";
+    private string testPath = "D:\\_build";
+
+    private List<ItemData> items = new List<ItemData>
+    {
+        new ItemData(1, "appicn_phantuhuuco", "organic-molecules.exe" , "Hữu cơ"),
+        new ItemData(2, "appicn_rutherford_bohr", "excretory-system.exe" ,"Rutherford"),
+        new ItemData(3, "appicn_donchathopchat", "simple_compound.exe" ,"Đơn chất"),
+        new ItemData(4, "appicn_binhdienphan", "ProjectOptics.exe" ,"Điện phan6"),
+        new ItemData(5, "appicn_tinhbot", "ProjectOptics_2.exe" ,"Tinh bột"),
+    };
 
     private void Start()
     {
-        Screen.SetResolution(500, 500, false);
-        closeButton.onClick.AddListener(Quit);
+        Screen.SetResolution(1280, 720, false);
         var appPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
         var startPath = System.IO.Path.Combine(appPath, "..");
 
-        var exes = FindExeFiles(startPath);
-        
-        tmpCount.text = $"Found {exes.Count} exe";
-        tmpPath.text = startPath;
+        var exes = FindExeFiles(testPath);
 
-        foreach (var exe in exes)
+        foreach (var item in items)
         {
-            var (name, path) = exe;
-            var item = Instantiate(itemPrefab, scrollView.content);
-            item.Setup(name, () => RunExe(path));
+            if (exes.TryGetValue(item.exeName, out var path))
+            {
+                var button = Instantiate(itemPrefab, transform);
+                var sprite = Resources.Load<Sprite>(item.imageName);
+                button.Setup(item.text, () => RunExe(path), sprite);
+            }
+            else
+            {
+                var button = Instantiate(itemPrefab, transform);
+                button.Setup($"Không tìm thấy file {item.exeName}", null, null);
+            }
         }
     }
 
-    public List<(string, string)> FindExeFiles(string directoryPath)
+    public Dictionary<string, string> FindExeFiles(string directoryPath)
     {
-        var exeFiles = new List<(string name, string path)>();
+        var exeFiles = new Dictionary<string, string>();
 
         if (Directory.Exists(directoryPath))
         {
@@ -54,7 +57,8 @@ public class Manager : MonoBehaviour
                 {
                     string fileName = Path.GetFileName(file);
                     string filePath = Path.GetFullPath(file);
-                    exeFiles.Add((fileName, filePath));
+                    if(!exeFiles.ContainsKey(fileName))
+                        exeFiles.Add(fileName, filePath);
                 }
             }
             catch (System.Exception ex)
