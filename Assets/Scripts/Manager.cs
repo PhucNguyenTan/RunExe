@@ -14,6 +14,8 @@ public class Manager : MonoBehaviour
     private Transform sectionError;
     [SerializeField]
     private Transform sectionButton;
+    [SerializeField]
+    private TMP_Text tmpTextTitle;
 
 
     private void Start()
@@ -42,6 +44,8 @@ public class Manager : MonoBehaviour
             ShowError("Dữ liệu data của exe bị lỗi hoặc không tìm thấy!");
             return;
         }
+
+        tmpTextTitle.text = appData.title;
 
         var appPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
         var findPath = System.IO.Path.Combine(appPath, "..");

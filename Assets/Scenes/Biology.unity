@@ -1121,6 +1121,7 @@ MonoBehaviour:
   tmpTextError: {fileID: 1757213146}
   sectionError: {fileID: 1289593028}
   sectionButton: {fileID: 1107568162}
+  tmpTextTitle: {fileID: 560075859}
 --- !u!1 &1757213143
 GameObject:
   m_ObjectHideFlags: 0
