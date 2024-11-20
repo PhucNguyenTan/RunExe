@@ -9,6 +9,9 @@ public class Manager : MonoBehaviour
 {
     [SerializeField]
     private TMP_Text tmpCount;
+
+    [SerializeField]
+    private Button closeButton;
     [SerializeField] 
     private TMP_Text tmpPath;
     [SerializeField]
@@ -20,7 +23,10 @@ public class Manager : MonoBehaviour
 
     private void Start()
     {
-        startPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
+        Screen.SetResolution(500, 500, false);
+        closeButton.onClick.AddListener(Quit);
+        var appPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
+        var startPath = System.IO.Path.Combine(appPath, "..");
 
         var exes = FindExeFiles(startPath);
         
@@ -71,5 +77,10 @@ public class Manager : MonoBehaviour
         {
             UnityEngine.Debug.Log("Executable started successfully.");
         }
+    }
+
+    private void Quit()
+    {
+        Application.Quit();
     }
 }
