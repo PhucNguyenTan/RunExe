@@ -1,22 +1,23 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Manager : MonoBehaviour
 {
     [SerializeField]
     private Item itemPrefab;
     [SerializeField]
-    private TMP_Text tmpTextError;
-    [SerializeField]
-    private Transform sectionError;
+    private ScrollRect errorScroll;
     [SerializeField]
     private Transform sectionButton;
     [SerializeField]
     private TMP_Text tmpTextTitle;
-
+    [SerializeField]
+    private TMP_Text tmpTextError;
 
     private void Start()
     {
@@ -25,20 +26,20 @@ public class Manager : MonoBehaviour
     }
     private void SetResolution()
     {
-        sectionError.gameObject.SetActive(false);
+        errorScroll.gameObject.SetActive(false);
         sectionButton.gameObject.SetActive(true);
         Screen.SetResolution(1280, 720, false);
     }
 
     private void CreateButtons()
     {
-        var appData = JsonDataHelper.ReadData<AppData>("app_data");
+        var appData = DataUtils.GetData<AppData>("app_data");
+        var items   = DataUtils.GetDatas<ItemData>("item_data");
         if (appData == null )
         {
             ShowError("Dữ liệu data của app bị lỗi hoặc không tìm thấy!");
             return;
         }
-        var items = JsonDataHelper.ReadDatas<ItemData>("item_data");
         if (items == null)
         {
             ShowError("Dữ liệu data của exe bị lỗi hoặc không tìm thấy!");
@@ -48,11 +49,12 @@ public class Manager : MonoBehaviour
         tmpTextTitle.text = appData.title;
 
         var appPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, ".."));
-        var findPath = System.IO.Path.Combine(appPath, "..");
+        var defaultPath = System.IO.Path.Combine(appPath, "..");
 
-        var startPath = string.IsNullOrEmpty(appData.testPath) ?
-                     findPath : 
-                     appData.testPath;
+        var startPath = Directory.Exists(appData.startPath) ?
+                     appData.startPath :
+                     defaultPath;
+        ShowError($"Đường dẫn: {startPath}");
         var exes = FindExeFiles(startPath);
 
         foreach (var item in items)
@@ -60,10 +62,10 @@ public class Manager : MonoBehaviour
             if (exes.TryGetValue(item.exeName, out var path))
             {
                 var button = Instantiate(itemPrefab, sectionButton);
-                var sprite = Resources.Load<Sprite>($"Images/{item.imageName}");
-                button.Setup(item.text, () => RunExe(path), sprite);
-                if(sprite == null)
-                    ShowError($"Không tìm thấy file hình: {item.imageName}");
+                button.Setup(item.text, () => RunExe(path[0]), GetSprite(item.imageName));
+
+                if(path.Count > 1)
+                    ShowError($"Có {path.Count} exe trùng tên {item.exeName}");
             }
             else
             {
@@ -74,10 +76,33 @@ public class Manager : MonoBehaviour
         }
     }
 
-    public Dictionary<string, string> FindExeFiles(string directoryPath)
+    private Sprite GetSprite(string spriteName)
     {
-        var exeFiles = new Dictionary<string, string>();
+        var sprite = Resources.Load<Sprite>($"Images/{spriteName}");
 
+        if (sprite == null)
+        {
+            string path = Path.Combine(Application.streamingAssetsPath, spriteName + ".png");
+            if (File.Exists(path))
+            {
+                byte[] fileData = File.ReadAllBytes(path);
+                Texture2D texture = new Texture2D(2, 2);
+                if (texture.LoadImage(fileData))
+                {
+                    sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+                }
+            }
+        }
+        if (sprite == null)
+        {
+            ShowError($"Không tìm thấy file hình: {spriteName}");
+        }
+        return sprite;
+    }
+
+    public Dictionary<string, List<string>> FindExeFiles(string directoryPath)
+    {
+        var exes = new List<(string name, string path)>();
         if (Directory.Exists(directoryPath))
         {
             try
@@ -87,8 +112,7 @@ public class Manager : MonoBehaviour
                 {
                     var fileName = Path.GetFileName(file);
                     var filePath = Path.GetFullPath(file);
-                    if(!exeFiles.ContainsKey(fileName))
-                        exeFiles.Add(fileName, filePath);
+                    exes.Add((fileName, filePath));
                 }
             }
             catch (System.Exception ex)
@@ -101,7 +125,11 @@ public class Manager : MonoBehaviour
             ShowError($"Không tìm thấy địa chỉ folder: {directoryPath}");
         }
 
-        return exeFiles;
+        return exes
+            .GroupBy(exe => exe.name)
+            .ToDictionary(
+                group => group.Key, 
+                group => group.Select(item => item.path).ToList());
     }
 
     public void RunExe(string exePath)
@@ -118,10 +146,10 @@ public class Manager : MonoBehaviour
         Application.Quit();
     }
 
-    private void ShowError(string error)
+    private void ShowError(string error, bool isActive = true)
     {
-        tmpTextError.text += $"\\r\\n {error}";
-        var isShowText = !string.IsNullOrEmpty(tmpTextError.text);
-        sectionError.gameObject.SetActive(isShowText);
+        var newError = Instantiate(tmpTextError, errorScroll.content);
+        newError.text = error;
+        errorScroll.gameObject.SetActive(isActive);
     }
 }
