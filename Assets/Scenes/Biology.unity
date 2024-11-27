@@ -490,8 +490,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "M\xF4n H\xF3a H\u1ECDc C\u1EA5p PTTH"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 1facefcaeb847a744ab4cae9597bcd1f, type: 2}
-  m_sharedMaterial: {fileID: 8399638099251663291, guid: 1facefcaeb847a744ab4cae9597bcd1f, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 195aa32b197fe534f9f460348798165e, type: 2}
+  m_sharedMaterial: {fileID: 8399638099251663291, guid: 195aa32b197fe534f9f460348798165e, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
